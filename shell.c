@@ -18,11 +18,17 @@ int main() {
         char cwd[256];
         getcwd(cwd, 256);
         printf("%s $ ", cwd);
-
+        fflush(stdout);
+        
         char input[256];
-        fgets(input, 256, stdin);
+        char * bytes = fgets(input, 256, stdin);
         char in[256];
         sscanf(input, "%[^\n]", in);
+
+        if (strcmp(in, "exit") == 0 || bytes == 0) {
+            exit(1);
+        }
+
         char * args[200];
         split_semicolon(in,args);
         int argscounter = 0;
