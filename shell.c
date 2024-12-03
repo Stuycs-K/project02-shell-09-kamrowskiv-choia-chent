@@ -25,22 +25,25 @@ int main() {
       sscanf(input, "%[^\n]", in);
       char * args[200];
       parse_args(in, args);
+      if(strcmp(args[0], "cd") == 0) {
+        chdir(args[1]);
+      } else {
+        pid_t p = fork();
 
-      pid_t p = fork();
+        if (p < 0) {
+            perror("fork fail");
+            exit(1);
+        }
+        else if (p == 0) {
+            execvp(args[0], args);
+            exit(1);
+        }
+        else {
+            int status;
+            int id = wait(&status);
+        }
+      }
 
-      if (p < 0) {
-          perror("fork fail");
-          exit(1);
-      }
-      else if (p == 0) {
-          if
-          execvp(args[0], args);
-          exit(1);
-      }
-      else {
-          int status;
-          int id = wait(&status);
-      }
 
   }
 
