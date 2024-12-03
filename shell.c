@@ -21,9 +21,14 @@ int main() {
         fflush(stdout);
         
         char input[256];
-        fgets(input, 256, stdin);
+        char * bytes = fgets(input, 256, stdin);
         char in[256];
         sscanf(input, "%[^\n]", in);
+
+        if (strcmp(in, "exit") == 0 || bytes == 0) {
+            exit(1);
+        }
+
         char * args[200];
         parse_args(in, args);
 
