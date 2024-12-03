@@ -18,6 +18,7 @@ int main() {
         char cwd[256];
         getcwd(cwd, 256);
         printf("%s $ ", cwd);
+        fflush(stdout);
         
         char input[256];
         fgets(input, 256, stdin);
