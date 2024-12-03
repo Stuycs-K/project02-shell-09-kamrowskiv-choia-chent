@@ -32,6 +32,9 @@ int main() {
 
         parse_args(args[argscounter], splitinput);
 
+      if(strcmp(args[0], "cd") == 0) {
+        chdir(args[1]);
+      } else {
         pid_t p = fork();
 
         if (p < 0) {
@@ -46,11 +49,12 @@ int main() {
             int status;
             int id = wait(&status);
         }
-        argscounter++;
+
     }
+    argscounter++;
 }
 
-}
+}}
 
 void parse_args(char line[256], char * arg_ary[200]) {
     int i = 0;
@@ -60,7 +64,6 @@ void parse_args(char line[256], char * arg_ary[200]) {
     }
     arg_ary[i] = 0;
 }
-
 void split_semicolon(char line[256], char * arg_ary[200]){
   int i = 0;
   while(line){
