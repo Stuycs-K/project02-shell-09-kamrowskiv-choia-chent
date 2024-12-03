@@ -31,9 +31,8 @@ int main() {
 
 
         parse_args(args[argscounter], splitinput);
-
-      if(strcmp(args[0], "cd") == 0) {
-        chdir(args[1]);
+      if(strcmp(splitinput[0], "cd") == 0) {
+        chdir(splitinput[1]);
       } else {
         pid_t p = fork();
 
