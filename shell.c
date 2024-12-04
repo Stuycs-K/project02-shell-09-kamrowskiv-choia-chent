@@ -19,7 +19,7 @@ int main() {
         getcwd(cwd, 256);
         printf("%s $ ", cwd);
         fflush(stdout);
-        
+
         char input[256];
         char * bytes = fgets(input, 256, stdin);
         char in[256];
@@ -39,7 +39,8 @@ int main() {
         parse_args(args[argscounter], splitinput);
       if(strcmp(splitinput[0], "cd") == 0) {
         chdir(splitinput[1]);
-      } else {
+      }
+      else{
         pid_t p = fork();
 
         if (p < 0) {
@@ -47,9 +48,19 @@ int main() {
             exit(1);
         }
         else if (p == 0) {
+          // printf("forked\n");
+          // if(strcmp(splitinput[1],">") && splitinput[1]!=0 && splitinput[2]!=0){
+          //   int newfile = open(splitinput[2],O_WRONLY | O_CREAT);
+          //   int output = 1;
+          //   int backupoutput = dup(output);
+          //   dup2(newfile,output);
+          //   fflush(stdout);
+          //   dup2(backupoutput,output);
+          // }else{
             execvp(splitinput[0], splitinput);
             exit(1);
         }
+      //}
         else {
             int status;
             int id = wait(&status);
