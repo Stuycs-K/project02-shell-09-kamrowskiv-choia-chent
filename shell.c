@@ -13,13 +13,17 @@
 #include "shell.h"
 
 int main() {
-
+  char cwd[256];
+  getcwd(cwd, 256);
+  strcat(cwd, "a");
+  char * a = shortenpath(cwd);
+  printf("%s\n", a);
     while (1) {
         char cwd[256];
         getcwd(cwd, 256);
-        printf("%s $ ", cwd);
+        // printf("%s $ ", cwd);
         fflush(stdout);
-        
+
         char input[256];
         char * bytes = fgets(input, 256, stdin);
         char in[256];
@@ -77,4 +81,23 @@ void split_semicolon(char line[256], char * arg_ary[200]){
   }
   arg_ary[i] = 0;
 
+}
+
+char * shortenpath(char cwd[256]) {
+  //PLAN: FIND FIRST OCCURRENCE OF THE HOME AND THEN use length to calculate where it ends
+  char * home = getenv("HOME");
+  printf("%s %s\n", home, cwd);
+  char * extra = strsep(&cwd , home);
+  printf("%s\n", cwd);
+  char * pathwithtilda = (char *)malloc(256);
+  pathwithtilda[0] = '~';
+  pathwithtilda[1] = 0;
+  if (cwd == 0) {
+    return extra;
+  }
+  else {
+    strcat(pathwithtilda, cwd);
+    printf("%s\n", cwd);
+    return pathwithtilda;
+  }
 }
