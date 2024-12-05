@@ -41,8 +41,15 @@ int main() {
           exit(1);
         }
         else if (p == 0) {
+          if (splitinput[1] && strcmp(splitinput[1], "<") == 0) {
           input_redirection(splitinput);
           execvp(splitinput[0], splitinput);
+        }
+          if(splitinput[1] && strcmp(splitinput[1],">")==0){
+            stdout_redirection(splitinput);
+
+        }
+
           exit(1);
         }
         else if (p > 0) {
@@ -91,7 +98,6 @@ char * shortenpath(char cwd[256]) {
   Redirects the input if a "<" symbol is entered, used before execvp
 */
 void input_redirection(char * splitinput[200]) {
-  if (splitinput[1] && strcmp(splitinput[1], "<") == 0) {
     int fd1 = open(splitinput[2], O_RDONLY);
     if (fd1 == -1) {
       perror("open failed");
@@ -102,5 +108,27 @@ void input_redirection(char * splitinput[200]) {
     dup2(fd1, STDIN_FILENO);
     splitinput[1] = NULL;
     splitinput[2] = NULL;
-  }
+
+}
+
+void stdout_redirection(char * splitinput[200]){
+    int fd1 = open(splitinput[2], O_WRONLY | O_CREAT | O_TRUNC);
+    if (fd1 == -1) {
+      perror("open failed");
+      exit(1);
+    }
+    int FILENO = 1;
+    int backupstdout = dup(FILENO);
+    char * forsplitting[200];
+    forsplitting[0] = splitinput[0];
+    forsplitting[1] = 0;
+    dup2(fd1,FILENO);
+    execvp(forsplitting[0], forsplitting);
+    fflush(stdout);
+    dup2(backupstdout,FILENO);
+    close(fd1);
+    splitinput[0] = NULL;
+    splitinput[1] = NULL;
+    splitinput[2] = NULL;
+
 }
