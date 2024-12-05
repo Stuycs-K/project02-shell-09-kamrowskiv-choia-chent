@@ -13,64 +13,59 @@
 #include "shell.h"
 
 int main() {
-    while (1) {
-        char cwd[256];
-        getcwd(cwd, 256);
-        char * p = shortenpath(cwd);
-        printf("%s $ ", p);
-        fflush(stdout);
+  while (1) {
+    char cwd[256];
+    getcwd(cwd, 256);
+    char * p = shortenpath(cwd);
+    printf("%s $ ", p);
+    fflush(stdout);
 
-        char input[256];
-        char * bytes = fgets(input, 256, stdin);
-        char in[256];
-        sscanf(input, "%[^\n]", in);
+    char input[256];
+    char * bytes = fgets(input, 256, stdin);
+    char in[256];
+    sscanf(input, "%[^\n]", in);
 
-        if (strcmp(in, "exit") == 0 || bytes == 0) {
-            exit(1);
-        }
+    if (strcmp(in, "exit") == 0 || bytes == 0) {
+      exit(1);
+    }
 
-        char * args[200];
-        split_semicolon(in,args);
-        int argscounter = 0;
-        while(args[argscounter]!=0){
-          char * splitinput[200];
+    char * args[200];
+    split_semicolon(in,args);
+    int argscounter = 0;
+    while(args[argscounter]!=0) {
+      char * splitinput[200];
+      parse_args(args[argscounter], splitinput);
 
-
-        parse_args(args[argscounter], splitinput);
       if(strcmp(splitinput[0], "cd") == 0) {
         chdir(splitinput[1]);
-      }
-      else{
+      } else {
         pid_t p = fork();
-
         if (p < 0) {
-            perror("fork fail");
-            exit(1);
+          perror("fork fail");
+          exit(1);
         }
         else if (p == 0) {
-          // printf("forked\n");
-          // if(strcmp(splitinput[1],">") && splitinput[1]!=0 && splitinput[2]!=0){
-          //   int newfile = open(splitinput[2],O_WRONLY | O_CREAT);
-          //   int output = 1;
-          //   int backupoutput = dup(output);
-          //   dup2(newfile,output);
-          //   fflush(stdout);
-          //   dup2(backupoutput,output);
-          // }else{
-            execvp(splitinput[0], splitinput);
-            exit(1);
+        printf("forked\n");
+        // if(strcmp(splitinput[1],">") && splitinput[1]!=0 && splitinput[2]!=0){
+        //   int newfile = open(splitinput[2],O_WRONLY | O_CREAT);
+        //   int output = 1;
+        //   int backupoutput = dup(output);
+        //   dup2(newfile,output);
+        //   fflush(stdout);
+        //   dup2(backupoutput,output);
+        // } else {
+          execvp(splitinput[0], splitinput);
+        //}
+          exit(1);
         }
-      //}
-        else {
-            int status;
-            int id = wait(&status);
+        else if (p > 0) {
+          int status;
+          int id = wait(&status);
         }
-
+      }
+      argscounter++;
     }
-    argscounter++;
-}
-
-}
+  }
 }
 
 void parse_args(char line[256], char * arg_ary[200]) {
@@ -95,7 +90,7 @@ char * shortenpath(char cwd[256]) {
   char * home = getenv("HOME");
   char * p = strstr(cwd, home);
   if (p == 0) {
-    return cwd; 
+    return cwd;
   }
   else {
     cwd[strlen(home) - 1] = '~';
