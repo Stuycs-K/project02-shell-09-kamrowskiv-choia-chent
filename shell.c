@@ -13,13 +13,10 @@
 #include "shell.h"
 
 int main() {
-
     while (1) {
         char cwd[256];
-        getcwd(cwd, 256);
-        printf("%s $ ", cwd);
-        fflush(stdout);
-        
+        displaycwd(cwd);
+
         char input[256];
         char * bytes = fgets(input, 256, stdin);
         char in[256];
@@ -30,51 +27,94 @@ int main() {
         }
 
         char * args[200];
-        split_semicolon(in,args);
+        parse(in,args, ";");
+
+
         int argscounter = 0;
         while(args[argscounter]!=0){
           char * splitinput[200];
+          parse(args[argscounter], splitinput, " ");
 
 
-        parse_args(args[argscounter], splitinput);
-      if(strcmp(splitinput[0], "cd") == 0) {
-        chdir(splitinput[1]);
-      } else {
-        pid_t p = fork();
+          if(strcmp(splitinput[0], "cd") == 0) {
+            chdir(splitinput[1]);
+          } else {
+            runcmd(splitinput);
 
-        if (p < 0) {
-            perror("fork fail");
-            exit(1);
+          }
+
+          argscounter++;
         }
-        else if (p == 0) {
-            execvp(splitinput[0], splitinput);
-            exit(1);
-        }
-        else {
-            int status;
-            int id = wait(&status);
-        }
-
-    }
-    argscounter++;
+      }
 }
 
-}}
-
-void parse_args(char line[256], char * arg_ary[200]) {
+void parse(char line[256], char * arg_ary[200], char * sep) {
+  // VARIABLES: line, arg_ary, sep
+  // line is the unparsed string containing the line the user wants to run
+  // arg_ary is the array of strings that will store the parsed strings
+  // RETURN VALUE: NONE
+  // WHAT IT DOES:
+  // Using a while loop, the code uses strsep() to store each token (delimited by sep) as an element in arg_ary
+  // Then a null character is added to the end to terminate the string
     int i = 0;
     while (line) {
-        arg_ary[i] = strsep(&line, " ");
+        arg_ary[i] = strsep(&line, sep);
         i++;
     }
     arg_ary[i] = 0;
 }
-void split_semicolon(char line[256], char * arg_ary[200]){
-  int i = 0;
-  while(line){
-    arg_ary[i] = strsep(&line, ";");
-    i++;
-  }
-  arg_ary[i] = 0;
 
+char * shortenpath(char cwd[256]) {
+  // VARIABLES: cwd
+  // cwd is the buffer that stores the current working directory that the shell is currently in
+  // RETURN VALUE: char *
+  // shortenpath() returns a pointer to the beginning of a string that contains the shortened cwd (aka the home directory in the pwd is replaced with ~)
+  // WHAT IT DOES:
+  // The code uses strstr() to find the first occurrence of the home directory in cwd
+  // If the home directory is not found in cwd then the code just returns a pointer to cwd
+  // If the home directory is found in cwd then the code just writes a ~ to cwd at the end of the home directory and returns the pointer to that location
+  char * home = getenv("HOME");
+  char * p = strstr(cwd, home);
+  if (p == 0) {
+    return cwd;
+  }
+  else {
+    cwd[strlen(home) - 1] = '~';
+    return cwd + strlen(home) - 1;
+  }
+}
+
+void displaycwd(char cwd[256]) {
+  // VARIABLES: cwd
+  // cwd is the buffer that stores the current working directory that the shell is currently in
+  // RETURN VALUE: NONE
+  // WHAT IT DOES:
+  // The code stores the current working directory into cwd and then shortens the path using shortenpath()
+  // Then the code displays the shortened path and flushes stdout
+  getcwd(cwd, 256);
+  char * p = shortenpath(cwd);
+  printf("%s $ ", p);
+  fflush(stdout);
+}
+
+void runcmd(char * input[200]) {
+  // VARIABLES: input
+  // input is the buffer that stores the command the user enters
+  // RETURN VALUE: NONE
+  // WHAT IT DOES:
+  // The code creates a child process and then uses execvp() to run the command on the child process
+  // The parent process waits for the child process to finish running 
+  pid_t p = fork();
+  if (p < 0) {
+    perror("fork fail");
+    exit(1);
+  }
+  else if (p == 0) {
+    execvp(input[0], input);
+    exit(1);
+  }
+  else {
+    int status;
+    int id = wait(&status);
+  }
 }
