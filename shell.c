@@ -41,18 +41,7 @@ int main() {
           exit(1);
         }
         else if (p == 0) {
-          printf("Forked\n");
-          if (strcmp(splitinput[1], "<") == 0) {
-            printf("R");
-            int fd1 = open(splitinput[2], O_RDONLY);
-            int FILENO = 0;
-            int backup_stdin = dup(FILENO);
-            dup2(fd1, FILENO);
-            execvp(splitinput[0], splitinput);
-            dup2(backup_stdin, FILENO);
-          } else {
-            printf("NR");
-          }
+          input_redirection(splitinput);
           execvp(splitinput[0], splitinput);
           exit(1);
         }
@@ -93,5 +82,24 @@ char * shortenpath(char cwd[256]) {
   else {
     cwd[strlen(home) - 1] = '~';
     return cwd + strlen(home) - 1;
+  }
+}
+/*
+  Args: char * splitinput[200], containing the input from the user split by spaces or ;
+  Return: void
+  Redirects the input if a "<" symbol is entered, used before execvp
+*/
+void input_redirection(char * splitinput[200]) {
+  if (splitinput[1] && strcmp(splitinput[1], "<") == 0) {
+    int fd1 = open(splitinput[2], O_RDONLY);
+    if (fd1 == -1) {
+      perror("open failed");
+      exit(1);
+    }
+    int FILENO = 0;
+    int backup_stdin = dup(FILENO);
+    dup2(fd1, STDIN_FILENO);
+    splitinput[1] = NULL;
+    splitinput[2] = NULL;
   }
 }
