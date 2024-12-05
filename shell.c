@@ -29,18 +29,23 @@ int main() {
     char * args[200];
     split_semicolon(in,args);
     int argscounter = 0;
+    int pipe_redirect = 0;
     while(args[argscounter]!=0) {
       char * splitinput[200];
       parse_args(args[argscounter], splitinput);
       if(strcmp(splitinput[0], "cd") == 0) {
         chdir(splitinput[1]);
       } else {
+        pipe_redirect = pipe_redirection(splitinput);
         pid_t p = fork();
         if (p < 0) {
           perror("fork fail");
           exit(1);
         }
         else if (p == 0) {
+          if(pipe_redirect) {
+
+          }
           input_redirection(splitinput);
           execvp(splitinput[0], splitinput);
           exit(1);
@@ -97,10 +102,32 @@ void input_redirection(char * splitinput[200]) {
       perror("open failed");
       exit(1);
     }
-    int FILENO = 0;
-    int backup_stdin = dup(FILENO);
     dup2(fd1, STDIN_FILENO);
     splitinput[1] = NULL;
     splitinput[2] = NULL;
+    close(fd1);
   }
 }
+
+
+// int pipe_redirection(char * splitinput[200], int argscounter) {
+//   int fd = open("pipe.txt", O_CREAT | O_RDWR);
+//   if (fd1 == -1) {
+//     perror("open failed");
+//     return 0;
+//   }
+//
+//   int pipe_index = 0;
+//   for (int i = 0; splitinput[i]; i++) {
+//     if (splitinput[i] == "|") {
+//       pipe_index = i;
+//     }
+//   }
+//   if (pipe_index == 0) {
+//     return 0;
+//   }
+//
+//   dup2(fd, STDOUT_FILENO);
+//   splitinput[argscounter + 1] = NULL;
+//   return 1;
+// }
