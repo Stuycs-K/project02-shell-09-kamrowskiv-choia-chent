@@ -45,10 +45,13 @@ int main() {
           input_redirection(splitinput);
           execvp(splitinput[0], splitinput);
         }
-          if(splitinput[1] && strcmp(splitinput[1],">")==0){
+          else if(splitinput[1] && strcmp(splitinput[1],">")==0){
             stdout_redirection(splitinput);
 
+        }else{
+          execvp(splitinput[0], splitinput);
         }
+
 
           exit(1);
         }
@@ -112,7 +115,7 @@ void input_redirection(char * splitinput[200]) {
 }
 
 void stdout_redirection(char * splitinput[200]){
-    int fd1 = open(splitinput[2], O_WRONLY | O_CREAT | O_TRUNC);
+    int fd1 = open(splitinput[2], O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd1 == -1) {
       perror("open failed");
       exit(1);
