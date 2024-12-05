@@ -84,6 +84,7 @@ char * shortenpath(char cwd[256]) {
     return cwd + strlen(home) - 1;
   }
 }
+
 /*
   Args: char * splitinput[200], containing the input from the user split by spaces or ;
   Return: void
