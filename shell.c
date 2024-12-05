@@ -13,11 +13,11 @@
 #include "shell.h"
 
 int main() {
-
     while (1) {
         char cwd[256];
         getcwd(cwd, 256);
-        printf("%s $ ", cwd);
+        char * p = shortenpath(cwd);
+        printf("%s $ ", p);
         fflush(stdout);
 
         char input[256];
@@ -70,7 +70,8 @@ int main() {
     argscounter++;
 }
 
-}}
+}
+}
 
 void parse_args(char line[256], char * arg_ary[200]) {
     int i = 0;
@@ -88,4 +89,16 @@ void split_semicolon(char line[256], char * arg_ary[200]){
   }
   arg_ary[i] = 0;
 
+}
+
+char * shortenpath(char cwd[256]) {
+  char * home = getenv("HOME");
+  char * p = strstr(cwd, home);
+  if (p == 0) {
+    return cwd; 
+  }
+  else {
+    cwd[strlen(home) - 1] = '~';
+    return cwd + strlen(home) - 1;
+  }
 }
