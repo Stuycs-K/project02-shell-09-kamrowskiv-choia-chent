@@ -13,70 +13,58 @@
 #include "shell.h"
 
 int main() {
-
-    while (1) {
-        char cwd[256];
-        getcwd(cwd, 256);
-        printf("%s $ ", cwd);
-        fflush(stdout);
-
-        char input[256];
-        char * bytes = fgets(input, 256, stdin);
-        char in[256];
-        sscanf(input, "%[^\n]", in);
-
-        if (strcmp(in, "exit") == 0 || bytes == 0) {
-            exit(1);
-        }
-
-        char * args[200];
-        split_semicolon(in,args);
-        int argscounter = 0;
-        while(args[argscounter]!=0){
-          char * splitinput[200];
-
-
-        parse_args(args[argscounter], splitinput);
+  while (1) {
+    char cwd[256];
+    getcwd(cwd, 256);
+    char * p = shortenpath(cwd);
+    printf("%s $ ", p);
+    fflush(stdout);
+    char input[256];
+    char * bytes = fgets(input, 256, stdin);
+    char in[256];
+    sscanf(input, "%[^\n]", in);
+    if (strcmp(in, "exit") == 0 || bytes == 0) {
+      exit(1);
+    }
+    char * args[200];
+    split_semicolon(in,args);
+    int argscounter = 0;
+    while(args[argscounter]!=0) {
+      char * splitinput[200];
+      parse_args(args[argscounter], splitinput);
       if(strcmp(splitinput[0], "cd") == 0) {
         chdir(splitinput[1]);
-      }
-
-
-
-      else {
+      } else {
         pid_t p = fork();
-
         if (p < 0) {
-            perror("fork fail");
-            exit(1);
+          perror("fork fail");
+          exit(1);
         }
         else if (p == 0) {
-          // printf("Forked\n");
-          // if (strcmp(splitinput[1], "<") == 0) {
-          //   printf("R");
-          //   int fd1 = open(splitinput[2], O_WRONLY);
-          //   int FILENO = 0;
-          //   int backup_stdin = dup(FILENO);
-          //   dup2(fd1, FILENO);
-          //   execvp(splitinput[0], splitinput);
-          //   dup2(backup_stdin, FILENO);
-          // } else {
-          //   printf("NR");
-          //
-          // }
+          printf("Forked\n");
+          if (strcmp(splitinput[1], "<") == 0) {
+            printf("R");
+            int fd1 = open(splitinput[2], O_RDONLY);
+            int FILENO = 0;
+            int backup_stdin = dup(FILENO);
+            dup2(fd1, FILENO);
+            execvp(splitinput[0], splitinput);
+            dup2(backup_stdin, FILENO);
+          } else {
+            printf("NR");
+          }
           execvp(splitinput[0], splitinput);
           exit(1);
         }
-        else {
-            int status;
-            int id = wait(&status);
+        else if (p > 0) {
+          int status;
+          int id = wait(&status);
         }
-
+      }
+      argscounter++;
     }
-    argscounter++;
+  }
 }
-
-}}
 
 void parse_args(char line[256], char * arg_ary[200]) {
     int i = 0;
@@ -94,4 +82,16 @@ void split_semicolon(char line[256], char * arg_ary[200]){
   }
   arg_ary[i] = 0;
 
+}
+
+char * shortenpath(char cwd[256]) {
+  char * home = getenv("HOME");
+  char * p = strstr(cwd, home);
+  if (p == 0) {
+    return cwd;
+  }
+  else {
+    cwd[strlen(home) - 1] = '~';
+    return cwd + strlen(home) - 1;
+  }
 }
