@@ -48,14 +48,17 @@ int main() {
       }
 }
 
+/*
+  Args: line, arg_ary, sep
+  line is the unparsed string containing the line the user wants to run
+  arg_ary is the array of strings that will store the parsed strings
+  sep is the string containing the delimiter
+  Return: void
+  WHAT IT DOES:
+  Using a while loop, the code uses strsep() to store each token (delimited by sep) as an element in arg_ary
+  Then a null character is added to the end to terminate the string
+*/
 void parse(char line[256], char * arg_ary[200], char * sep) {
-  // VARIABLES: line, arg_ary, sep
-  // line is the unparsed string containing the line the user wants to run
-  // arg_ary is the array of strings that will store the parsed strings
-  // RETURN VALUE: NONE
-  // WHAT IT DOES:
-  // Using a while loop, the code uses strsep() to store each token (delimited by sep) as an element in arg_ary
-  // Then a null character is added to the end to terminate the string
     int i = 0;
     while (line) {
         arg_ary[i] = strsep(&line, sep);
@@ -64,15 +67,17 @@ void parse(char line[256], char * arg_ary[200], char * sep) {
     arg_ary[i] = 0;
 }
 
+/*
+  VARIABLES: cwd
+  cwd is the buffer that stores the current working directory that the shell is currently in
+  Return: char *
+  shortenpath() returns a pointer to the beginning of a string that contains the shortened cwd (aka the home directory in the pwd is replaced with ~)
+  WHAT IT DOES:
+  The code uses strstr() to find the first occurrence of the home directory in cwd
+  If the home directory is not found in cwd then the code just returns a pointer to cwd
+  If the home directory is found in cwd then the code just writes a ~ to cwd at the end of the home directory and returns the pointer to that location
+*/
 char * shortenpath(char cwd[256]) {
-  // VARIABLES: cwd
-  // cwd is the buffer that stores the current working directory that the shell is currently in
-  // RETURN VALUE: char *
-  // shortenpath() returns a pointer to the beginning of a string that contains the shortened cwd (aka the home directory in the pwd is replaced with ~)
-  // WHAT IT DOES:
-  // The code uses strstr() to find the first occurrence of the home directory in cwd
-  // If the home directory is not found in cwd then the code just returns a pointer to cwd
-  // If the home directory is found in cwd then the code just writes a ~ to cwd at the end of the home directory and returns the pointer to that location
   char * home = getenv("HOME");
   char * p = strstr(cwd, home);
   if (p == 0) {
@@ -84,26 +89,51 @@ char * shortenpath(char cwd[256]) {
   }
 }
 
+/*
+  Args: char * splitinput[200], containing the input from the user split by spaces or ;
+  Return: void
+  Redirects the input if a "<" symbol is entered, used before execvp
+*/
+void input_redirection(char * splitinput[200]) {
+  if (splitinput[1] && strcmp(splitinput[1], "<") == 0) {
+    int fd1 = open(splitinput[2], O_RDONLY);
+    if (fd1 == -1) {
+      perror("open failed");
+      exit(1);
+    }
+    int FILENO = 0;
+    int backup_stdin = dup(FILENO);
+    dup2(fd1, STDIN_FILENO);
+    splitinput[1] = NULL;
+    splitinput[2] = NULL;
+  }
+}
+
+/*
+  VARIABLES: cwd
+  cwd is the buffer that stores the current working directory that the shell is currently in
+  RETURN VALUE: NONE
+  WHAT IT DOES:
+  The code stores the current working directory into cwd and then shortens the path using shortenpath()
+  Then the code displays the shortened path and flushes stdout
+*/
 void displaycwd(char cwd[256]) {
-  // VARIABLES: cwd
-  // cwd is the buffer that stores the current working directory that the shell is currently in
-  // RETURN VALUE: NONE
-  // WHAT IT DOES:
-  // The code stores the current working directory into cwd and then shortens the path using shortenpath()
-  // Then the code displays the shortened path and flushes stdout
+
   getcwd(cwd, 256);
   char * p = shortenpath(cwd);
   printf("%s $ ", p);
   fflush(stdout);
 }
 
+/*
+  VARIABLES: input
+  input is the buffer that stores the command the user enters
+  RETURN VALUE: NONE
+  WHAT IT DOES:
+  The code creates a child process and then uses execvp() to run the command on the child process
+  The parent process waits for the child process to finish running
+*/
 void runcmd(char * input[200]) {
-  // VARIABLES: input
-  // input is the buffer that stores the command the user enters
-  // RETURN VALUE: NONE
-  // WHAT IT DOES:
-  // The code creates a child process and then uses execvp() to run the command on the child process
-  // The parent process waits for the child process to finish running 
   pid_t p = fork();
   if (p < 0) {
     perror("fork fail");
