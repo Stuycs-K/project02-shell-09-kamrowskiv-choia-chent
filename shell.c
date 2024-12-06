@@ -35,19 +35,21 @@ int main() {
       if(strcmp(splitinput[0], "cd") == 0) {
         chdir(splitinput[1]);
       } else {
-        pid_t p = fork();
-        if (p < 0) {
-          perror("fork fail");
-          exit(1);
-        }
-        else if (p == 0) {
-          input_redirection(splitinput);
-          execvp(splitinput[0], splitinput);
-          exit(1);
-        }
-        else if (p > 0) {
-          int status;
-          int id = wait(&status);
+        if (!execute_pipe(splitinput)) {
+          pid_t p = fork();
+          if (p < 0) {
+            perror("fork fail");
+            exit(1);
+          }
+          else if (p == 0) {
+            input_redirection(splitinput);
+            execvp(splitinput[0], splitinput);
+            exit(1);
+          }
+          else if (p > 0) {
+            int status;
+            int id = wait(&status);
+          }
         }
       }
       argscounter++;
@@ -103,4 +105,24 @@ void input_redirection(char * splitinput[200]) {
     splitinput[1] = NULL;
     splitinput[2] = NULL;
   }
+}
+
+int execute_pipe(char * splitinput [200]) {
+  for (int i = 1; splitinput[i + 1]; i++) {
+    if(strcmp(splitinput[i], "|") == 0) {
+      char command [200];
+      char buffer[200];
+      strcat(command, splitinput[i - 1]);
+      strcat(command, splitinput[i]);
+      strcat(command, splitinput[i + 1]);
+      FILE * fd = popen(command, "r");
+
+      while (fgets(buffer, sizeof(buffer), fd) != NULL) {
+            printf("%s", buffer);
+      }
+      pclose(fd);
+      return 1;
+    }
+  }
+  return 0;
 }
