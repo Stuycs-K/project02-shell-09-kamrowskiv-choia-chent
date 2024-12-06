@@ -36,7 +36,6 @@ int main() {
       if(strcmp(splitinput[0], "cd") == 0) {
         chdir(splitinput[1]);
       } else {
-        pipe_redirect = pipe_redirection(splitinput);
         pid_t p = fork();
         if (p < 0) {
           perror("fork fail");
@@ -55,29 +54,37 @@ int main() {
           int id = wait(&status);
         }
       }
-      argscounter++;
-    }
-  }
 }
 
-void parse_args(char line[256], char * arg_ary[200]) {
+/*
+  Args: line, arg_ary, sep
+  line is the unparsed string containing the line the user wants to run
+  arg_ary is the array of strings that will store the parsed strings
+  sep is the string containing the delimiter
+  Return: void
+
+  Using a while loop, the code uses strsep() to store each token (delimited by sep) as an element in arg_ary
+  Then a null character is added to the end to terminate the string
+*/
+void parse(char line[256], char * arg_ary[200], char * sep) {
     int i = 0;
     while (line) {
-        arg_ary[i] = strsep(&line, " ");
+        arg_ary[i] = strsep(&line, sep);
         i++;
     }
     arg_ary[i] = 0;
 }
-void split_semicolon(char line[256], char * arg_ary[200]){
-  int i = 0;
-  while(line){
-    arg_ary[i] = strsep(&line, ";");
-    i++;
-  }
-  arg_ary[i] = 0;
 
-}
+/*
+  Args: cwd
+  cwd is the buffer that stores the current working directory that the shell is currently in
+  Return: char *
+  shortenpath() returns a pointer to the beginning of a string that contains the shortened cwd (aka the home directory in the pwd is replaced with ~)
 
+  The code uses strstr() to find the first occurrence of the home directory in cwd
+  If the home directory is not found in cwd then the code just returns a pointer to cwd
+  If the home directory is found in cwd then the code just writes a ~ to cwd at the end of the home directory and returns the pointer to that location
+*/
 char * shortenpath(char cwd[256]) {
   char * home = getenv("HOME");
   char * p = strstr(cwd, home);
@@ -91,8 +98,10 @@ char * shortenpath(char cwd[256]) {
 }
 
 /*
-  Args: char * splitinput[200], containing the input from the user split by spaces or ;
+  Args: splitinput
+  splitinput containing the parsed input
   Return: void
+
   Redirects the input if a "<" symbol is entered, used before execvp
 */
 void input_redirection(char * splitinput[200]) {
@@ -109,25 +118,42 @@ void input_redirection(char * splitinput[200]) {
   }
 }
 
+/*
+  Args: cwd
+  cwd is the buffer that stores the current working directory that the shell is currently in
+  Return: void
 
-// int pipe_redirection(char * splitinput[200], int argscounter) {
-//   int fd = open("pipe.txt", O_CREAT | O_RDWR);
-//   if (fd1 == -1) {
-//     perror("open failed");
-//     return 0;
-//   }
-//
-//   int pipe_index = 0;
-//   for (int i = 0; splitinput[i]; i++) {
-//     if (splitinput[i] == "|") {
-//       pipe_index = i;
-//     }
-//   }
-//   if (pipe_index == 0) {
-//     return 0;
-//   }
-//
-//   dup2(fd, STDOUT_FILENO);
-//   splitinput[argscounter + 1] = NULL;
-//   return 1;
-// }
+  The code stores the current working directory into cwd and then shortens the path using shortenpath()
+  Then the code displays the shortened path and flushes stdout
+*/
+void displaycwd(char cwd[256]) {
+
+  getcwd(cwd, 256);
+  char * p = shortenpath(cwd);
+  printf("%s $ ", p);
+  fflush(stdout);
+}
+
+/*
+  Args: input
+  input is the buffer that stores the command the user enters
+  Return: void
+
+  The code creates a child process and then uses execvp() to run the command on the child process
+  The parent process waits for the child process to finish running
+*/
+void runcmd(char * input[200]) {
+  pid_t p = fork();
+  if (p < 0) {
+    perror("fork fail");
+    exit(1);
+  }
+  else if (p == 0) {
+    execvp(input[0], input);
+    exit(1);
+  }
+  else {
+    int status;
+    int id = wait(&status);
+  }
+}
