@@ -29,20 +29,16 @@ int main() {
         char * args[200];
         parse(in,args, ";");
 
-
         int argscounter = 0;
         while(args[argscounter]!=0){
           char * splitinput[200];
           parse(args[argscounter], splitinput, " ");
-
-
           if(strcmp(splitinput[0], "cd") == 0) {
             chdir(splitinput[1]);
           } else {
+
             runcmd(splitinput);
-
           }
-
           argscounter++;
         }
       }
@@ -72,7 +68,7 @@ void parse(char line[256], char * arg_ary[200], char * sep) {
   cwd is the buffer that stores the current working directory that the shell is currently in
   Return: char *
   shortenpath() returns a pointer to the beginning of a string that contains the shortened cwd (aka the home directory in the pwd is replaced with ~)
-  
+
   The code uses strstr() to find the first occurrence of the home directory in cwd
   If the home directory is not found in cwd then the code just returns a pointer to cwd
   If the home directory is found in cwd then the code just writes a ~ to cwd at the end of the home directory and returns the pointer to that location
@@ -90,25 +86,46 @@ char * shortenpath(char cwd[256]) {
 }
 
 /*
-  Args: splitinput 
+  Args: splitinput
   splitinput containing the parsed input
   Return: void
-  
+
   Redirects the input if a "<" symbol is entered, used before execvp
 */
-void input_redirection(char * splitinput[200]) {
-  if (splitinput[1] && strcmp(splitinput[1], "<") == 0) {
-    int fd1 = open(splitinput[2], O_RDONLY);
-    if (fd1 == -1) {
-      perror("open failed");
-      exit(1);
-    }
-    int FILENO = 0;
-    int backup_stdin = dup(FILENO);
-    dup2(fd1, STDIN_FILENO);
-    splitinput[1] = NULL;
-    splitinput[2] = NULL;
+void input_redirection(char * splitinput[200], int i) {
+  // if (splitinput[1] && strcmp(splitinput[1], "<") == 0) {
+  int fd1 = open(splitinput[i + 1], O_RDONLY);
+  if (fd1 == -1) {
+    perror("open failed");
+    exit(1);
   }
+  dup2(fd1, STDIN_FILENO);
+  splitinput[i] = NULL;
+  splitinput[i + 1] = NULL;
+  close(fd1);
+  // }
+}
+
+void pipe_redirection(char * input[200], int pipe, int in, int out) {
+  char cmd1[256] = "";
+  char cmd2[256] = "";
+  for(int i = in + 2; i < pipe && input[i]; i++) {
+    strcat(cmd1, input[i]);
+  }
+  if(out == -1) out = 200;
+  for(int i = pipe + 1; i < out && input[i]; i++) {
+    strcat(cmd1, input[i]);
+  }
+
+  FILE * fd = popen(strcat(cmd1, cmd2), "r");
+  if (!fd) {
+    perror("pipe fail");
+  }
+  char buffer[256];
+  while(fgets(buffer, sizeof(buffer), fd)) {
+    printf("%s", buffer);
+  }
+  pclose(fd);
 }
 
 /*
@@ -136,12 +153,31 @@ void displaycwd(char cwd[256]) {
   The parent process waits for the child process to finish running
 */
 void runcmd(char * input[200]) {
+  int input_redirect = -1;
+  int output_redirect = -1;
+  int pipe_redirect = -1;
+  for(int i = 0; input[i]; i++) {
+    if(strcmp(input[i], "<") == 0) input_redirect = i;
+    if(strcmp(input[i], ">") == 0) output_redirect = i;
+    if(strcmp(input[i], "|") == 0) pipe_redirect = i;
+  }
   pid_t p = fork();
   if (p < 0) {
     perror("fork fail");
     exit(1);
   }
   else if (p == 0) {
+    if(input_redirect != -1) {
+      input_redirection(input, input_redirect);
+    }
+    if(pipe_redirect != -1) {
+      pipe_redirection(input, pipe_redirect, input_redirect, output_redirect);
+    }
+    if(output_redirect != -1) {
+      //uncomment when done
+      //output_redirection(input, output_redirect);
+    }
+
     execvp(input[0], input);
     exit(1);
   }
