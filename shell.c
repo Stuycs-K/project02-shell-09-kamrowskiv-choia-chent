@@ -134,10 +134,10 @@ void output_redirection(char * splitinput[200], int i){
   pipe is the index of the "|" symbol
   in is the index of the "<" symbol
   out is the index of the ">" symbol
-  indexes used to determine
   Return: void
 
-  Redirects the input if a "<" symbol is entered, used before execvp
+  Indexes used to determine what commands to run based on if there is a redirect symbol
+  Runs popen() after using strcat to run the command.
 */
 
 void pipe_redirection(char * input[200], int pipe, int in, int out) {
@@ -159,7 +159,6 @@ void pipe_redirection(char * input[200], int pipe, int in, int out) {
   strcat(command, "| ");
   strcat(command, cmd2);
   FILE * fd = popen(command, "r");
-  //printf("COMMAND: %s\n in: %d out: %d pipe: %d \n", command, in, out, pipe);
   if (!fd) {
     perror("pipe fail");
   }
@@ -178,6 +177,7 @@ void pipe_redirection(char * input[200], int pipe, int in, int out) {
   The code stores the current working directory into cwd and then shortens the path using shortenpath()
   Then the code displays the shortened path and flushes stdout
 */
+
 void displaycwd(char cwd[256]) {
 
   getcwd(cwd, 256);
@@ -193,9 +193,11 @@ void displaycwd(char cwd[256]) {
 
   The code creates a child process and then uses execvp() to run the command on the child process
   The parent process waits for the child process to finish running
-  If there is a pipe, calls the pipe_redirection function to run popen() to execute after handling all other possible pipe_redirection
   With input and output redirection, handles the redirection before running execvp
+  If there is a pipe, calls the pipe_redirection function to run popen() to execute after handling all other redirections
+  Finds the indexes of the redirection symbols to use in redirection functions
 */
+
 void runcmd(char * input[200]) {
   int input_redirect = -1;
   int output_redirect = -1;
@@ -215,6 +217,7 @@ void runcmd(char * input[200]) {
       input_redirection(input, input_redirect);
     }
     if(pipe_redirect != -1) {
+      // handle output redirection before popen()
       if(output_redirect != -1) {
         output_redirection(input, output_redirect);
       }
