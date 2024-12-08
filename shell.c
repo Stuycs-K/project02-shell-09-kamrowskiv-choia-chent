@@ -25,25 +25,30 @@ int main() {
         if (strcmp(in, "exit") == 0 || bytes == 0) {
             exit(1);
         }
+        else if (p == 0) {
+          int redirection_flag = 0;
+          for(int x = 0;splitinput[x]!=NULL;x++){
+          if (strcmp(splitinput[x], ">") == 0) {
+          stdout_redirection(splitinput);
+          redirection_flag = 1;
+          break;
+        }
+          else if(strcmp(splitinput[x],"<")==0){
+            input_redirection(splitinput);
+            redirection_flag = 1;
+            break;
+        }}
+        if(!redirection_flag){
+          execvp(splitinput[0], splitinput);
+        }
+        
 
-        char * args[200];
-        parse(in,args, ";");
-
-
-        int argscounter = 0;
-        while(args[argscounter]!=0){
-          char * splitinput[200];
-          parse(args[argscounter], splitinput, " ");
-
-
-          if(strcmp(splitinput[0], "cd") == 0) {
-            chdir(splitinput[1]);
-          } else {
-            runcmd(splitinput);
-
-          }
-
-          argscounter++;
+          
+          exit(0);
+        }
+        else if (p > 0) {
+          int status;
+          int id = wait(&status);
         }
       }
 }
@@ -97,7 +102,6 @@ char * shortenpath(char cwd[256]) {
   Redirects the input if a "<" symbol is entered, used before execvp
 */
 void input_redirection(char * splitinput[200]) {
-  if (splitinput[1] && strcmp(splitinput[1], "<") == 0) {
     int fd1 = open(splitinput[2], O_RDONLY);
     if (fd1 == -1) {
       perror("open failed");
@@ -108,7 +112,32 @@ void input_redirection(char * splitinput[200]) {
     dup2(fd1, STDIN_FILENO);
     splitinput[1] = NULL;
     splitinput[2] = NULL;
-  }
+
+}
+
+void stdout_redirection(char * splitinput[200]){
+  int i = 0;
+    while(splitinput[i] && strcmp(splitinput[i],">")!=0){
+      i++;
+    }
+    int fd = open(splitinput[i+1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if(fd==-1){
+      perror("open failed");
+      exit(1);
+    }
+    if(dup2(fd,STDOUT_FILENO)==-1){
+      perror("dup2 failed");
+      close(fd);
+      exit(1);
+    }
+    splitinput[i] = NULL;
+    if(execvp(splitinput[0],splitinput)==-1){
+      perror("execvp failed");
+      close(fd);
+      exit(1);
+    }
+    close(fd);
+
 }
 
 /*
