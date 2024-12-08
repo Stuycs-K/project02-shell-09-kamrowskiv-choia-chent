@@ -25,30 +25,25 @@ int main() {
         if (strcmp(in, "exit") == 0 || bytes == 0) {
             exit(1);
         }
-        else if (p == 0) {
-          int redirection_flag = 0;
-          for(int x = 0;splitinput[x]!=NULL;x++){
-          if (strcmp(splitinput[x], ">") == 0) {
-          stdout_redirection(splitinput);
-          redirection_flag = 1;
-          break;
-        }
-          else if(strcmp(splitinput[x],"<")==0){
-            input_redirection(splitinput);
-            redirection_flag = 1;
-            break;
-        }}
-        if(!redirection_flag){
-          execvp(splitinput[0], splitinput);
-        }
-        
 
-          
-          exit(0);
-        }
-        else if (p > 0) {
-          int status;
-          int id = wait(&status);
+        char * args[200];
+        parse(in,args, ";");
+
+
+        int argscounter = 0;
+        while(args[argscounter]!=0){
+          char * splitinput[200];
+          parse(args[argscounter], splitinput, " ");
+
+
+          if(strcmp(splitinput[0], "cd") == 0) {
+            chdir(splitinput[1]);
+          } else {
+            runcmd(splitinput);
+
+          }
+
+          argscounter++;
         }
       }
 }
@@ -171,8 +166,22 @@ void runcmd(char * input[200]) {
     exit(1);
   }
   else if (p == 0) {
-    execvp(input[0], input);
-    exit(1);
+    int redirection_flag = 0;
+          for(int x = 0;input[x]!=NULL;x++){
+          if (strcmp(input[x], ">") == 0) {
+          stdout_redirection(input);
+          redirection_flag = 1;
+          break;
+          }else if(strcmp(input[x],"<")==0){
+            input_redirection(input);
+            redirection_flag = 1;
+            break;
+          }
+          }
+          if(!redirection_flag){
+            execvp(input[0],input);
+          }
+          exit(0);
   }
   else {
     int status;
