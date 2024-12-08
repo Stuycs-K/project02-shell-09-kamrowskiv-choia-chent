@@ -16,7 +16,6 @@ int main() {
     while (1) {
         char cwd[256];
         displaycwd(cwd);
-
         char input[256];
         char * bytes = fgets(input, 256, stdin);
         char in[256];
@@ -86,14 +85,14 @@ char * shortenpath(char cwd[256]) {
 }
 
 /*
-  Args: splitinput
+  Args: splitinput, i
   splitinput containing the parsed input
+  i is the index of the "<" symbol
   Return: void
 
   Redirects the input if a "<" symbol is entered, used before execvp
 */
 void input_redirection(char * splitinput[200], int i) {
-  // if (splitinput[1] && strcmp(splitinput[1], "<") == 0) {
   int fd1 = open(splitinput[i + 1], O_RDONLY);
   if (fd1 == -1) {
     perror("open failed");
@@ -103,21 +102,64 @@ void input_redirection(char * splitinput[200], int i) {
   splitinput[i] = NULL;
   splitinput[i + 1] = NULL;
   close(fd1);
-  // }
 }
+
+/*
+  Args: splitinput, i
+  splitinput containing the parsed input
+  i is the index of the ">" symbol
+  Return: void
+
+  Redirects the output if a ">" symbol is entered, used before execvp
+*/
+void output_redirection(char * splitinput[200], int i){
+  int fd = open(splitinput[i+1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+  if(fd==-1){
+    perror("open failed");
+    exit(1);
+  }
+  if(dup2(fd,STDOUT_FILENO)==-1){
+    perror("dup2 failed");
+    close(fd);
+    exit(1);
+  }
+  splitinput[i] = NULL;
+  splitinput[i + 1] = NULL;
+  close(fd);
+}
+
+/*
+  Args: input, pipe, in, out
+  input containing the parsed input
+  pipe is the index of the "|" symbol
+  in is the index of the "<" symbol
+  out is the index of the ">" symbol
+  indexes used to determine
+  Return: void
+
+  Redirects the input if a "<" symbol is entered, used before execvp
+*/
 
 void pipe_redirection(char * input[200], int pipe, int in, int out) {
   char cmd1[256] = "";
   char cmd2[256] = "";
-  for(int i = in + 2; i < pipe && input[i]; i++) {
+  // when to splice the command if theres an input redirection
+  int end = (in == -1) ? pipe : in;
+  for(int i = 0; i < end && input[i]; i++) {
     strcat(cmd1, input[i]);
+    strcat(cmd1, " ");
   }
   if(out == -1) out = 200;
   for(int i = pipe + 1; i < out && input[i]; i++) {
-    strcat(cmd1, input[i]);
+    strcat(cmd2, input[i]);
+    strcat(cmd2, " ");
   }
-
-  FILE * fd = popen(strcat(cmd1, cmd2), "r");
+  char command[512] = "";
+  strcat(command, cmd1);
+  strcat(command, "| ");
+  strcat(command, cmd2);
+  FILE * fd = popen(command, "r");
+  //printf("COMMAND: %s\n in: %d out: %d pipe: %d \n", command, in, out, pipe);
   if (!fd) {
     perror("pipe fail");
   }
@@ -151,6 +193,8 @@ void displaycwd(char cwd[256]) {
 
   The code creates a child process and then uses execvp() to run the command on the child process
   The parent process waits for the child process to finish running
+  If there is a pipe, calls the pipe_redirection function to run popen() to execute after handling all other possible pipe_redirection
+  With input and output redirection, handles the redirection before running execvp
 */
 void runcmd(char * input[200]) {
   int input_redirect = -1;
@@ -171,13 +215,15 @@ void runcmd(char * input[200]) {
       input_redirection(input, input_redirect);
     }
     if(pipe_redirect != -1) {
+      if(output_redirect != -1) {
+        output_redirection(input, output_redirect);
+      }
       pipe_redirection(input, pipe_redirect, input_redirect, output_redirect);
+      exit(1);
     }
     if(output_redirect != -1) {
-      //uncomment when done
-      //output_redirection(input, output_redirect);
+      output_redirection(input, output_redirect);
     }
-
     execvp(input[0], input);
     exit(1);
   }
