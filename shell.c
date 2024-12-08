@@ -41,19 +41,25 @@ int main() {
           exit(1);
         }
         else if (p == 0) {
-          if (splitinput[1] && strcmp(splitinput[1], "<") == 0) {
-          input_redirection(splitinput);
+          int redirection_flag = 0;
+          for(int x = 0;splitinput[x]!=NULL;x++){
+          if (strcmp(splitinput[x], ">") == 0) {
+          stdout_redirection(splitinput);
+          redirection_flag = 1;
+          break;
+        }
+          else if(strcmp(splitinput[x],"<")==0){
+            input_redirection(splitinput);
+            redirection_flag = 1;
+            break;
+        }}
+        if(!redirection_flag){
           execvp(splitinput[0], splitinput);
         }
-          else if(splitinput[1] && strcmp(splitinput[1],">")==0){
-            stdout_redirection(splitinput);
+        
 
-        }else{
-          execvp(splitinput[0], splitinput);
-        }
-
-
-          exit(1);
+          
+          exit(0);
         }
         else if (p > 0) {
           int status;
@@ -115,23 +121,26 @@ void input_redirection(char * splitinput[200]) {
 }
 
 void stdout_redirection(char * splitinput[200]){
-    int fd1 = open(splitinput[2], O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    if (fd1 == -1) {
+  int i = 0;
+    while(splitinput[i] && strcmp(splitinput[i],">")!=0){
+      i++;
+    }
+    int fd = open(splitinput[i+1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if(fd==-1){
       perror("open failed");
       exit(1);
     }
-    int FILENO = 1;
-    int backupstdout = dup(FILENO);
-    char * forsplitting[200];
-    forsplitting[0] = splitinput[0];
-    forsplitting[1] = 0;
-    dup2(fd1,FILENO);
-    execvp(forsplitting[0], forsplitting);
-    fflush(stdout);
-    dup2(backupstdout,FILENO);
-    close(fd1);
-    splitinput[0] = NULL;
-    splitinput[1] = NULL;
-    splitinput[2] = NULL;
+    if(dup2(fd,STDOUT_FILENO)==-1){
+      perror("dup2 failed");
+      close(fd);
+      exit(1);
+    }
+    splitinput[i] = NULL;
+    if(execvp(splitinput[0],splitinput)==-1){
+      perror("execvp failed");
+      close(fd);
+      exit(1);
+    }
+    close(fd);
 
 }
