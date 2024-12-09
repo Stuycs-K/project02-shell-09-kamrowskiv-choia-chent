@@ -10,54 +10,49 @@
 #include <dirent.h>
 #include <signal.h>
 #include <sys/wait.h>
-#include "shell.h"
 
-int main() {
-    while (1) {
-        char cwd[256];
-        displaycwd(cwd);
-        char input[256];
-        char * bytes = fgets(input, 256, stdin);
-        char in[256];
-        sscanf(input, "%[^\n]", in);
-        if (strcmp(in, "exit") == 0 || bytes == 0) {
-            exit(1);
-        }
 
-        char * args[200];
-        parse(in,args, ";");
-        int argscounter = 0;
+/*
+  Args: line, arg_ary
+  line is the unparsed string containing the line the user wants to run
+  arg_ary is the array of strings that will store the parsed strings
+  Return: void
 
-        while(args[argscounter]!=0){
-          char * splitinput[200];
-          parse(args[argscounter], splitinput, " ");
-          if(strcmp(splitinput[0], "cd") == 0) {
-            chdir(splitinput[1]);
-          } else {
-            runcmd(splitinput);
-          }
-          argscounter++;
-        }
+  Using a while loop, the code uses strsep() to store each token (delimited by " ") as an element in arg_ary
+  Then a null character is added to the end to terminate the string
+*/
+void cmdparse(char line[256], char * arg_ary[200]) {
+    int i = 0;
+    while (line) {
+      char * tok = strsep(&line, " ");
+      if (i > 0 && tok[0] == '"' && tok[strlen(tok) - 1] == '"') {
+        tok[strlen(tok) - 1] = 0;
+        arg_ary[i] = tok + 1;
       }
+      else {
+        arg_ary[i] = tok;
+      }
+      i++;
+    }
+    arg_ary[i] = 0;
 }
 
 /*
-  Args: line, arg_ary, sep
-  line is the unparsed string containing the line the user wants to run
-  arg_ary is the array of strings that will store the parsed strings
-  sep is the string containing the delimiter
+  Args: line, line_ary
+  line is the unparsed string containing the lines the user wants to run separated by semicolons
+  line_ary is the array of strings that will store the parsed strings
   Return: void
 
-  Using a while loop, the code uses strsep() to store each token (delimited by sep) as an element in arg_ary
+  Using a while loop, the code uses strsep() to store each token (delimited by ;) as an element in line_ary
   Then a null character is added to the end to terminate the string
 */
-void parse(char line[256], char * arg_ary[200], char * sep) {
+void colonparse(char line[256], char * line_ary[200]) {
     int i = 0;
     while (line) {
-        arg_ary[i] = strsep(&line, sep);
-        i++;
+      line_ary[i] = strsep(&line, ";");
+      i++;
     }
-    arg_ary[i] = 0;
+    line_ary[i] = 0;
 }
 
 /*
